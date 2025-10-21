@@ -1,115 +1,159 @@
 package org.generation.agenda;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Gestiona la lógica de negocio de la agenda.
+ * Utiliza un HashSet para eficiencia y manejo automático de duplicados.
+ */
+public class Agenda {
+
+    private Set<Contacto> contactos;
+    private int capacidadMaxima;
+
+    // Tamaño por defecto si no se especifica
+    private static final int CAPACIDAD_DEFAULT = 10;
 
     /**
-     * Agenda de Contactos usando ArrayList
-     * Implementa un límite máximo controlado manualmente porque lo pide la tarea
+     * Constructor por defecto (tamaño 10).
      */
-    public class Agenda{
-        // ========== ATRIBUTOS ==========
-        private ArrayList<Contacto> contactos;
-        private int tamanoMaximo;
+    public Agenda() {
+        this(CAPACIDAD_DEFAULT); // Llama al otro constructor
+    }
 
-        // ========== CONSTRUCTORES ==========
+    /**
+     * Constructor con capacidad específica.
+     */
+    public Agenda(int capacidadMaxima) {
+        this.capacidadMaxima = capacidadMaxima;
+        this.contactos = new HashSet<>(capacidadMaxima);
+    }
 
-        /**
-         * Constructor con tamaño personalizado
-         * @param tamanoMaximo Capacidad máxima de la agenda
-         */
-        public Agenda(int tamanoMaximo) {
-            this.tamanoMaximo = tamanoMaximo;
-            this.contactos = new ArrayList<>();
+    // --- Métodos de Funcionalidad ---
 
+    /**
+     * Añade un contacto validando espacio, nulos y duplicados.
+     */
+    public void anadirContacto(Contacto c) {
+        // Validación 1: Nombre o apellido vacíos
+        if (c.getNombre() == null || c.getNombre().trim().isEmpty() ||
+            c.getApellido() == null || c.getApellido().trim().isEmpty()) {
+            System.out.println("Error: No se puede añadir contacto con nombre o apellido vacíos.");
+            return;
         }
 
-        /**
-         * Constructor con tamaño por defecto (10)
-         */
-        public Agenda() {
-            this(10);
+        // Validación 2: Agenda llena
+        if (agendaLlena()) {
+            System.out.println("Error: La agenda está llena. No se pudo añadir a " + c.getNombre() + " " + c.getApellido());
+            return;
         }
 
-        // ========== MÉTODOS PÚBLICOS ==========
+        // Validación 3: Duplicados (HashSet lo hace automático)
+        // .add() devuelve 'false' si el elemento ya existía (según equals/hashCode)
+        boolean anadido = this.contactos.add(c);
 
-        /**
-         * Añade un contacto a la agenda
-         */
-        public void anadirContacto(Contacto c) {
-            if (agendaLlena()) {
-                System.out.println("No se puede añadir. La agenda está llena.");
-                return;
-            }
-
-            if (existeContacto(c)) {
-                System.out.println("El contacto '" + c.getNombre() + "' ya existe.");
-                return;
-            }
-
-            contactos.add(c);
-            System.out.println("Contacto '" + c.getNombre() + "' añadido.");
-        }
-
-        /**
-         * Verifica si un contacto existe en la agenda
-         */
-        public boolean existeContacto(Contacto c) {
-            return contactos.contains(c);
-        }
-
-        /**
-         * Lista todos los contactos de la agenda
-         */
-        public void listarContactos() {
-            if (contactos.isEmpty()) {
-                System.out.println("La agenda está vacía.");
-                return;
-            }
-
-            System.out.println("\n ===== LISTA DE CONTACTOS =====");
-            for (int i = 0; i < contactos.size(); i++) {
-                System.out.println((i + 1) + ". " + contactos.get(i));
-            }
-            System.out.println("=================================");
-            System.out.println("Total: " + contactos.size() + "/" + tamanoMaximo);
-            System.out.println();
-        }
-
-        /**
-         * Busca un contacto por nombre y muestra su información
-         */
-        public void buscaContacto(String nombre) {
-            for (Contacto c : contactos) {
-                if (c.getNombre().equalsIgnoreCase(nombre)) {
-                    System.out.println("📞 Encontrado: " + c);
-                    return;
-                }
-            }
-            System.out.println("No se encontró '" + nombre + "'.");
-        }
-
-        /**
-         * Elimina un contacto de la agenda
-         */
-        public void eliminarContacto(Contacto c) {
-            if (contactos.remove(c)) {
-                System.out.println("Contacto '" + c.getNombre() + "' eliminado.");
-            } else {
-                System.out.println("El contacto no existe en la agenda.");
-            }
-        }
-
-        /**
-         * Indica si la agenda está llena
-         */
-        public boolean agendaLlena() {
-            return contactos.size() >= tamanoMaximo;
-        }
-
-        /**
-         * Devuelve la cantidad de espacios libres
-         */
-        public int espaciosLibres() {
-            return tamanoMaximo - contactos.size();
+        if (anadido) {
+            System.out.println("Contacto '" + c.getNombre() + " " + c.getApellido() + "' añadido.");
+        } else {
+            System.out.println("Error: El contacto '" + c.getNombre() + " " + c.getApellido() + "' ya existe.");
         }
     }
+
+    /**
+     * Verifica si un contacto existe (basado en nombre y apellido).
+     * Complejidad O(1) gracias a HashSet.
+     */
+    public boolean existeContacto(Contacto c) {
+        // .contains() usa internamente equals() y hashCode()
+        return this.contactos.contains(c);
+    }
+
+    /**
+     * Muestra todos los contactos, ordenados alfabéticamente.
+     */
+    public void listarContactos() {
+        if (contactos.isEmpty()) {
+            System.out.println("La agenda está vacía.");
+            return;
+        }
+
+        System.out.println("--- Lista de Contactos (" + contactos.size() + "/" + capacidadMaxima + ") ---");
+
+        // Convertimos el Set a ArrayList para poder ordenarlo
+        ArrayList<Contacto> listaOrdenada = new ArrayList<>(contactos);
+        Collections.sort(listaOrdenada); // Usa el compareTo() de Contacto
+
+        // Imprimimos cada contacto
+        for (Contacto c : listaOrdenada) {
+            System.out.println(c);
+        }
+    }
+
+    /**
+     * Busca un contacto por nombre y apellido y muestra su teléfono.
+     */
+    public void buscaContacto(String nombre, String apellido) {
+        // Creamos un "dummy" para buscar, solo necesitamos nombre y apellido
+        Contacto aBuscar = new Contacto(nombre, apellido, "");
+
+        // Buscamos con un bucle for tradicional
+        for (Contacto c : contactos) {
+            if (c.equals(aBuscar)) {
+                System.out.println("Teléfono de " + nombre + " " + apellido + ": " + c.getTelefono());
+                return;
+            }
+        }
+
+        System.out.println("Contacto '" + nombre + " " + apellido + "' no encontrado.");
+    }
+
+    /**
+     * Elimina un contacto (buscado por nombre y apellido).
+     * Complejidad O(1) gracias a HashSet.
+     */
+    public void eliminarContacto(Contacto c) {
+        // .remove() usa equals() y hashCode() para encontrar el objeto
+        boolean eliminado = this.contactos.remove(c);
+
+        if (eliminado) {
+            System.out.println("Contacto '" + c.getNombre() + " " + c.getApellido() + "' eliminado.");
+        } else {
+            System.out.println("Contacto '" + c.getNombre() + " " + c.getApellido() + "' no se encontró.");
+        }
+    }
+
+    /**
+     * Modifica el teléfono de un contacto existente.
+     */
+    public void modificarTelefono(String nombre, String apellido, String nuevoTelefono) {
+        Contacto aBuscar = new Contacto(nombre, apellido, "");
+
+        // Buscamos con un bucle for tradicional
+        for (Contacto c : contactos) {
+            if (c.equals(aBuscar)) {
+                c.setTelefono(nuevoTelefono);
+                System.out.println("Teléfono de '" + nombre + " " + apellido + "' actualizado.");
+                return;
+            }
+        }
+
+        System.out.println("Contacto '" + nombre + " " + apellido + "' no encontrado, no se pudo modificar.");
+    }
+
+    /**
+     * Devuelve true si la agenda está llena, false en caso contrario.
+     */
+    public boolean agendaLlena() {
+        return this.contactos.size() >= this.capacidadMaxima;
+    }
+
+    /**
+     * Devuelve el número de espacios libres.
+     */
+    public int espacioLibres() {
+        return this.capacidadMaxima - this.contactos.size();
+    }
+}
